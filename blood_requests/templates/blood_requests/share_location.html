@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Share Location{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-primary mb-4">Share Your Location</h2>
+
+    <!-- Search by village/location -->
+    <div class="mb-3">
+        <label for="search" class="form-label">Search by Village/Location (India only)</label>
+        <div class="input-group">
+            <input type="text" class="form-control" id="search" placeholder="Enter village name">
+            <button class="btn btn-outline-secondary" type="button" onclick="searchLocation()">🔍 Search</button>
+        </div>
+    </div>
+
+    <!-- Location form -->
+    <form method="post" id="locationForm">
+        {% csrf_token %}
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="lat" class="form-label">Latitude</label>
+                <input type="text" class="form-control" id="lat" name="lat" readonly required>
+            </div>
+            <div class="col-md-6">
+                <label for="lng" class="form-label">Longitude</label>
+                <input type="text" class="form-control" id="lng" name="lng" readonly required>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <button type="button" class="btn btn-outline-primary me-2" onclick="getLocation()">📍 Use My Current Location</button>
+            <button type="submit" class="btn btn-success">💾 Save Location</button>
+        </div>
+    </form>
+
+    <!-- Map -->
+    <div id="map" style="height: 500px; border-radius: 10px; margin-top: 15px;"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let map, marker;
+
+// Initialize map with given coordinates
+function initMap(lat=20.5937, lng=78.9629, zoom=5) {
+    map = L.map('map').setView([lat, lng], zoom);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    marker = L.marker([lat, lng], { draggable:true }).addTo(map)
+        .bindPopup("Drag to adjust location")
+        .openPopup();
+
+    // Update form fields on drag
+    marker.on("dragend", function(e){
+        const pos = e.target.getLatLng();
+        document.getElementById("lat").value = pos.lat.toFixed(6);
+        document.getElementById("lng").value = pos.lng.toFixed(6);
+    });
+
+    // Set initial values
+    document.getElementById("lat").value = lat.toFixed(6);
+    document.getElementById("lng").value = lng.toFixed(6);
+}
+
+// Get current location
+function getLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            if (!map) {
+                initMap(lat, lng, 15);
+            } else {
+                map.setView([lat, lng], 15);
+                marker.setLatLng([lat, lng]);
+            }
+            document.getElementById("lat").value = lat.toFixed(6);
+            document.getElementById("lng").value = lng.toFixed(6);
+        }, err => {
+            alert("Could not get your location: " + err.message);
+            if (!map) initMap(); // fallback to India center
+        }, { enableHighAccuracy:true });
+    } else {
+        alert("Geolocation not supported by your browser.");
+        if (!map) initMap();
+    }
+}
+
+// Search by village/location (India only)
+function searchLocation() {
+    const query = document.getElementById("search").value.trim();
+    if (!query) { alert("Enter a village or location name."); return; }
+
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=IN&limit=5`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.length > 0) {
+                const lat = parseFloat(data[0].lat);
+                const lng = parseFloat(data[0].lon);
+                map.setView([lat, lng], 15);
+                marker.setLatLng([lat, lng]);
+                document.getElementById("lat").value = lat.toFixed(6);
+                document.getElementById("lng").value = lng.toFixed(6);
+            } else {
+                alert("Location not found in India.");
+            }
+        })
+        .catch(err => console.error(err));
+}
+
+// Auto-detect location on page load
+getLocation();
+</script>
+{% endblock %}

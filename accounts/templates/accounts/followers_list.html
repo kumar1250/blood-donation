@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Followers{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header">Followers</div>
+            <div class="card-body">
+                <ul class="list-group">
+                    {% for follower in followers %}
+                        <li class="list-group-item">{{ follower.username }}</li>
+                    {% empty %}
+                        <li class="list-group-item">No followers yet</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header">Following</div>
+            <div class="card-body">
+                <ul class="list-group">
+                    {% for user in following %}
+                        <li class="list-group-item">{{ user.username }}</li>
+                    {% empty %}
+                        <li class="list-group-item">Not following anyone</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% block title %}All Blood Camps{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4" style="height: 90vh;">
+    <div class="row h-100">
+        <!-- Left: Camp List -->
+        <div class="col-md-4 h-100 overflow-auto" style="background:#fff0f0; padding:20px; border-right:1px solid #ddd;">
+            <h3 class="mb-3 text-danger fw-bold">All Upcoming Blood Camps</h3>
+
+            <!-- Search -->
+            <form method="GET" class="mb-3">
+                <input type="text" name="city" value="{{ city|default:'' }}" placeholder="Enter city" class="form-control mb-2">
+                <button type="submit" class="btn btn-danger w-100 fw-bold">Search</button>
+            </form>
+
+            {% if camps %}
+                <div class="list-group">
+                    {% for camp in camps %}
+                        <button class="list-group-item list-group-item-action mb-2 text-start border border-danger"
+                                onclick="focusCamp({{ camp.id }})">
+                            <div class="fw-bold text-danger">{{ camp.name }}</div>
+                            <small>📍 {{ camp.city }} | 📅 {{ camp.date }}</small>
+                        </button>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted">No camps found.</p>
+            {% endif %}
+
+            <!-- Map Pan Controls -->
+            <div class="mt-3 text-center">
+                <button class="btn btn-sm btn-outline-danger mb-1 fw-bold" onclick="panMap(0, -50)">↑</button><br>
+                <button class="btn btn-sm btn-outline-danger fw-bold" onclick="panMap(-50, 0)">←</button>
+                <button class="btn btn-sm btn-outline-danger fw-bold" onclick="panMap(50, 0)">→</button><br>
+                <button class="btn btn-sm btn-outline-danger mt-1 fw-bold" onclick="panMap(0, 50)">↓</button>
+            </div>
+        </div>
+
+        <!-- Right: Map -->
+        <div class="col-md-8 h-100 p-0">
+            <div id="map" style="height: 100%; width: 100%;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+var map = L.map('map', {
+    center: [20.5937, 78.9629],
+    zoom: 5,
+    scrollWheelZoom: true,
+    dragging: true,
+    zoomControl: false
+});
+
+// Custom zoom control
+L.control.zoom({ position: 'topleft' }).addTo(map);
+
+// OpenStreetMap tiles
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+}).addTo(map);
+
+var markers = {};
+
+{% for camp in camps %}
+    {% if camp.latitude and camp.longitude %}
+        var googleLink = `https://www.google.com/maps/dir/?api=1&destination={{ camp.latitude }},{{ camp.longitude }}`;
+
+        var popupContent = `
+            <div style="max-width: 320px; font-family:'Poppins', sans-serif; color:#333;">
+                <div style="border:2px solid #b30000; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.25); padding:15px; background:#fff;">
+                    <h5 style="color:#b30000; font-weight:700; margin-bottom:12px; text-align:center;">
+                        ❤️ {{ camp.name }}
+                    </h5>
+                    <ul style="list-style:none; padding:0; margin:0; font-size:14px; line-height:1.5rem;">
+                        <li><strong>📌 Organized by:</strong> {{ camp.organized_by }}</li>
+                        <li><strong>📅 Date & Time:</strong> {{ camp.date }} at {{ camp.time }}</li>
+                        <li><strong>🏥 Venue:</strong> {{ camp.venue }}</li>
+                        <li><strong>🌆 City:</strong> {{ camp.city }}</li>
+                        <li><strong>☎️ Contact:</strong> {{ camp.contact_person }} ({{ camp.contact_phone }})</li>
+                        <li><strong>👤 Age Range:</strong> {{ camp.min_age }} - {{ camp.max_age }} yrs</li>
+                        <li><strong>⚖️ Min Weight:</strong> {{ camp.min_weight }} kg</li>
+                        <li><strong>📝 Notes:</strong> {{ camp.notes|default:"N/A" }}</li>
+                    </ul>
+                    <div style="text-align:center; margin-top:12px;">
+                        <a href="${googleLink}" target="_blank" 
+                           style="display:inline-block; padding:8px 14px; background:#b30000; color:#fff; font-size:0.9rem; font-weight:600; border-radius:8px; text-decoration:none; box-shadow:0 2px 6px rgba(0,0,0,0.2);">
+                           🚗 Get Directions
+                        </a>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        markers[{{ camp.id }}] = L.marker([{{ camp.latitude }}, {{ camp.longitude }}])
+            .addTo(map)
+            .bindPopup(popupContent);
+    {% endif %}
+{% endfor %}
+
+function focusCamp(campId) {
+    var marker = markers[campId];
+    if(marker){
+        map.setView(marker.getLatLng(), 14);
+        marker.openPopup();
+    } else {
+        alert("Location not available for this camp.");
+    }
+}
+
+function panMap(x, y){
+    map.panBy([x, y], {animate:true});
+}
+</script>
+{% endblock %}

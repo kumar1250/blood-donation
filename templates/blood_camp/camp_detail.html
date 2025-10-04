@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}{{ camp.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card shadow-lg camp-detail-card">
+        <div class="card-body">
+            <!-- Title -->
+            <h2 class="mb-3 text-gold">{{ camp.title }}</h2>
+            
+            <!-- Date & Time -->
+            <p><strong>📅 Date:</strong> {{ camp.date }} at {{ camp.time }}</p>
+            
+            <!-- Venue -->
+            <p><strong>📍 Location:</strong> {{ camp.venue }}, {{ camp.city }}</p>
+            
+            <!-- Description -->
+            <p><strong>📝 Description:</strong></p>
+            <p>{{ camp.description|linebreaks }}</p>
+            
+            <!-- Organizer -->
+            <p><strong>👤 Organized by:</strong> {{ camp.organized_by }}</p>
+
+            <!-- Google Maps Button -->
+            {% if camp.latitude and camp.longitude %}
+            <a href="https://www.google.com/maps/dir/?api=1&destination={{ camp.latitude }},{{ camp.longitude }}" 
+               target="_blank" class="btn btn-info mt-2">
+                🌐 Get Directions
+            </a>
+            {% endif %}
+
+            <!-- Action Buttons -->
+            <div class="mt-4 d-flex gap-2 flex-wrap">
+                <a href="{% url 'blood_camp:camp_list' %}" class="btn btn-secondary btn-red-hover">⬅ Back to Camps</a>
+                <a href="{% url 'blood_camp:edit_camp' camp.id %}" class="btn btn-primary btn-red-hover">✏ Edit Camp</a>
+                <a href="{% url 'blood_camp:delete_camp' camp.id %}" class="btn btn-danger btn-red-hover">🗑 Delete Camp</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom styles for better readability on background -->
+<style>
+    .camp-detail-card {
+        border-radius: 15px;
+        background: rgba(0,0,0,0.7); /* darker overlay */
+        color: #fff;
+        padding: 20px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+    }
+    .text-gold {
+        font-weight: bold;
+        color: #FFD700;
+    }
+    p {
+        color: #fff;
+        font-size: 1rem;
+        margin-bottom: 8px;
+    }
+    .btn-red-hover:hover {
+        transform: scale(1.05);
+        transition: transform 0.2s ease-in-out;
+    }
+    .btn-info {
+        background-color: #007bff;
+        color: #fff;
+        font-weight: 600;
+    }
+    .btn-info:hover {
+        background-color: #0056b3;
+        color: #fff;
+    }
+
+    /* Responsive tweaks */
+    @media (max-width: 576px) {
+        h2 { font-size: 1.5rem; }
+        p { font-size: 0.9rem; }
+        .btn { font-size: 0.9rem; padding: 0.5rem 0.8rem; }
+    }
+</style>
+{% endblock %}

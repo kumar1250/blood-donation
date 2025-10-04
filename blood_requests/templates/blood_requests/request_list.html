@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+{% block title %}Blood Requests{% endblock %}
+
+{% block extra_css %}
+<!-- 🌐 Google Font -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* 🌐 Global font */
+.blood-requests-page {
+    font-family: "Poppins", sans-serif;
+}
+
+/* 🎨 Background images */
+.bg-requester-img {
+    background: url('/static/images/requester-bg.jpg') no-repeat center center;
+    background-size: cover;
+    color: #ffeb3b; /* bright yellow for readability */
+}
+.bg-donor-img {
+    background: url('/static/images/donor-bg.jpg') no-repeat center center;
+    background-size: cover;
+    color: #00ffff; /* cyan for readability */
+}
+
+/* 🔲 Overlay */
+.card-body {
+    background: rgba(0, 0, 0, 0.55);
+    border-radius: 12px;
+    padding: 18px;
+    color: #ffeb3b; /* default text in bright yellow */
+}
+.card-footer {
+    background: rgba(0, 0, 0, 0.65);
+    border-top: 1px solid rgba(255,255,255,0.2);
+    border-radius: 0 0 12px 12px;
+    padding: 15px;
+    color: #ffeb3b; /* default text in yellow */
+}
+
+/* 📝 Headings */
+.blood-requests-page h2 {
+    font-weight: 700;
+    font-size: 2rem;
+    color: #c82333;
+}
+.card-title {
+    font-weight: 600;
+    font-size: 1.2rem;
+}
+.card-subtitle {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #f0d84c;
+}
+
+/* 📌 Text */
+p {
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+}
+
+/* 🔹 Collapsible popup colors */
+.card-footer h6 {
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    color: #ff9800; /* orange headings */
+}
+.card-footer p strong {
+    color: #03a9f4; /* labels in blue */
+}
+.card-footer p span {
+    color: #ffeb3b; /* values in yellow */
+}
+.card-footer ul li {
+    color: #4caf50; /* donor usernames in green */
+}
+.card-footer ul li a {
+    color: #00ffff; /* links in cyan */
+}
+
+/* 🟢 Buttons */
+.btn {
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0px 4px 8px rgba(0,0,0,0.25);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4 blood-requests-page">
+    <h2 class="mb-4">Blood Requests</h2>
+
+    <a href="{% url 'blood_requests:request_form' %}" class="btn btn-danger mb-3">
+        <i class="bi bi-plus-circle-fill"></i> Create New Request
+    </a>
+
+    <div class="row">
+        {% for br in requests %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <!-- ✅ Different card background -->
+            <div class="card shadow border-0 h-100 
+                {% if br.requester == user %} bg-requester-img {% else %} bg-donor-img {% endif %}">
+                
+                <div class="card-body">
+                    <h5 class="card-title">{{ br.name }}</h5>
+                    <h6 class="card-subtitle mb-2">
+                        Blood Group: <span class="fw-bold">{{ br.blood_group }}</span>
+                    </h6>
+
+                    <p>
+                        Emergency: 
+                        {% if br.emergency %}
+                            <span class="badge bg-danger">Yes</span>
+                        {% else %}
+                            <span class="badge bg-secondary">No</span>
+                        {% endif %}
+                    </p>
+                    <p><strong>Requested By:</strong> {{ br.requester.username }}</p>
+
+                    <!-- 🔘 Actions -->
+                    <div class="d-flex flex-wrap gap-2 mt-2">
+                        {% if br.requester == user %}
+                            <!-- Requester actions -->
+                            <a href="{% url 'blood_requests:delete_request' br.id %}" class="btn btn-danger btn-sm">
+                                <i class="bi bi-trash-fill"></i> Delete
+                            </a>
+                            {% if br.donor_locations.all %}
+                            <a href="{% url 'blood_requests:donor_map' br.id %}" class="btn btn-primary btn-sm">
+                                <i class="bi bi-map-fill"></i> View Donors Map
+                            </a>
+                            {% endif %}
+                        {% else %}
+                            <!-- Donor actions -->
+                            {% if br.requester_lat and br.requester_lng %}
+                            <a href="{% url 'blood_requests:requester_map' br.id %}" class="btn btn-primary btn-sm">
+                                <i class="bi bi-geo-alt-fill"></i> View Location
+                            </a>
+                            {% endif %}
+                            <a href="{% url 'blood_requests:accept_request' br.id %}" class="btn btn-success btn-sm">
+                                <i class="bi bi-check2-circle"></i> Accept
+                            </a>
+                            <a href="{% url 'blood_requests:share_location' br.id %}" class="btn btn-info btn-sm">
+                                <i class="bi bi-geo-alt-fill"></i> Share Location
+                            </a>
+                            {% if br.otp and not br.otp_verified %}
+                            <a href="{% url 'blood_requests:verify_otp' br.id %}" class="btn btn-warning btn-sm">
+                                <i class="bi bi-shield-check"></i> Verify OTP
+                            </a>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+
+                    <!-- 🔽 Collapse toggles -->
+                    <div class="mt-3">
+                        {% if br.requester != user %}
+                        <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse" data-bs-target="#requester-{{ br.id }}">
+                            <i class="bi bi-person-lines-fill"></i> Requester Details
+                        </button>
+                        {% endif %}
+                        <button class="btn btn-sm btn-light ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#donors-{{ br.id }}">
+                            <i class="bi bi-people-fill"></i> Donors ({{ br.accepted_donors.count }})
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ℹ️ Collapsible Requester -->
+                <div class="collapse" id="requester-{{ br.id }}">
+                    <div class="card-footer">
+                        <h6>Requester Info</h6>
+                        <p><strong>Name:</strong> <span>{{ br.name }}</span></p>
+                        <p><strong>Email:</strong> <span>{{ br.email|default:"N/A" }}</span></p>
+                        <p><strong>Phone:</strong> <span>{{ br.phone|default:"N/A" }}</span></p>
+                        <p><strong>Reason:</strong> <span>{{ br.reason|default:"N/A" }}</span></p>
+                        <p><strong>Address:</strong> <span>{{ br.address|linebreaksbr }}</span></p>
+                        <p><strong>Created:</strong> <span class="text-success">{{ br.created_at|date:"Y-m-d H:i" }}</span></p>
+                        <p><strong>Lat/Lng:</strong> <span class="text-danger">{{ br.requester_lat|default:"N/A" }}</span> , <span class="text-danger">{{ br.requester_lng|default:"N/A" }}</span></p>
+                    </div>
+                </div>
+
+                <!-- ℹ️ Collapsible Donors -->
+                <div class="collapse" id="donors-{{ br.id }}">
+                    <div class="card-footer">
+                        <h6>Accepted Donors</h6>
+                        {% if br.accepted_donors.all %}
+                        <ul>
+                            {% for d in br.accepted_donors.all %}
+                            <li>
+                                <span class="text-success">{{ d.username }}</span>
+                                {% if d.email %} — <a href="mailto:{{ d.email }}" class="text-info">{{ d.email }}</a>{% endif %}
+                                {% if d.phone %} — <a href="tel:{{ d.phone }}" class="text-warning">{{ d.phone }}</a>{% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="text-muted">No accepted donors yet.</p>
+                        {% endif %}
+
+                        <h6 class="mt-3 text-primary">Donors Who Shared Location</h6>
+                        {% if br.donor_locations.all %}
+                        <ul>
+                            {% for loc in br.donor_locations.all %}
+                            <li>
+                                <span class="text-success">{{ loc.donor.username }}</span>
+                                <span class="text-warning">(Lat: {{ loc.lat }}, Lng: {{ loc.lng }})</span>
+                                <small class="d-block text-muted">Updated: {{ loc.updated_at|date:"Y-m-d H:i" }}</small>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="text-muted">No donors have shared a location yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <p class="text-center text-warning">No blood requests available.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

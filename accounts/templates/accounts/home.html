@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<!-- Background video -->
+<div class="video-bg">
+    <video autoplay muted loop id="bgVideo">
+        <source src="{% static 'videos/background.mp4' %}" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+</div>
+
+<!-- Dashboard container -->
+<div class="dashboard-container">
+    <div class="dashboard-card">
+        <h1 class="fw-bold text-danger">Welcome, {{ user.username }}! ❤️</h1>
+        <p class="lead">This is your Blood Donation Portal Dashboard.</p>
+
+        <!-- Quick action buttons -->
+        <div class="action-buttons">
+            <a href="{% url 'blood_requests:list' %}" class="btn btn-primary">View Blood Requests</a>
+            <a href="{% url 'blood_camps:list' %}" class="btn btn-secondary">View Blood Camps</a>
+            <a href="{% url 'accounts:profile' %}" class="btn btn-info">Profile</a>
+        </div>
+    </div>
+</div>
+
+<!-- Styles -->
+<style>
+.video-bg video {
+    position: fixed;
+    top: 0;
+    left: 0;
+    min-width: 100vw;
+    min-height: 100vh;
+    object-fit: cover;
+    z-index: 1;
+}
+
+.dashboard-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+    width: 100%;
+    max-width: 600px;
+    padding: 15px;
+}
+
+.dashboard-card {
+    background: rgba(255,255,255,0.20);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.18);
+    padding: 50px 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    color: #1944d2ff;
+    box-shadow: 0 9px 32px 0 rgba(31,38,135,0.37);
+}
+
+.dashboard-card h1 {
+    font-size: 32px;
+    margin-bottom: 15px;
+}
+
+.dashboard-card p.lead {
+    font-size: 18px;
+    margin-bottom: 25px;
+}
+
+.action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+    width: 100%;
+}
+
+.action-buttons .btn {
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: bold;
+    text-decoration: none;
+    color: white;
+    transition: transform 0.2s, background 0.2s;
+}
+
+.action-buttons .btn-primary {
+    background: #e53935;
+}
+
+.action-buttons .btn-primary:hover {
+    background: #c62828;
+    transform: scale(1.05);
+}
+
+.action-buttons .btn-secondary {
+    background: #1976d2;
+}
+
+.action-buttons .btn-secondary:hover {
+    background: #115293;
+    transform: scale(1.05);
+}
+
+.action-buttons .btn-info {
+    background: #43a047;
+}
+
+.action-buttons .btn-info:hover {
+    background: #2e7d32;
+    transform: scale(1.05);
+}
+</style>
+{% endblock %}

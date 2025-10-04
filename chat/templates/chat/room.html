@@ -1,0 +1,223 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Chat Room - {{ room_name }}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #121212;
+        color: #fff;
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .chat-container {
+        width: 100%;
+        max-width: 700px;
+        height: 90vh;
+        display: flex;
+        flex-direction: column;
+        border-radius: 15px;
+        background-color: #1e1e1e;
+        box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        overflow: hidden;
+    }
+
+    .chat-header {
+        background-color: #075e54;
+        color: #fff;
+        padding: 15px 20px;
+        font-size: 1.2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .chat-header i {
+        font-size: 1.4rem;
+    }
+
+    #chat-log {
+        flex: 1;
+        overflow-y: auto;
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        background-color: #121212;
+    }
+
+    .message {
+        max-width: 70%;
+        padding: 10px 15px;
+        border-radius: 20px;
+        position: relative;
+        word-wrap: break-word;
+        font-size: 0.95rem;
+        line-height: 1.3;
+        display: inline-block;
+    }
+
+    .message.self {
+        align-self: flex-end;
+        background-color: #25d366; /* WhatsApp green */
+        color: #fff;
+        border-bottom-right-radius: 5px;
+    }
+
+    .message.other {
+        align-self: flex-start;
+        background-color: #2a2a2a;
+        color: #fff;
+        border-bottom-left-radius: 5px;
+    }
+
+    .timestamp {
+        font-size: 0.7rem;
+        color: #ccc;
+        position: absolute;
+        bottom: 2px;
+        right: 10px;
+    }
+
+    .chat-input-container {
+        display: flex;
+        padding: 10px 15px;
+        background-color: #1e1e1e;
+        border-top: 1px solid #333;
+        gap: 10px;
+    }
+
+    #chat-message-input {
+        flex: 1;
+        padding: 12px 15px;
+        border-radius: 25px;
+        border: none;
+        outline: none;
+        background-color: #2a2a2a;
+        color: #fff;
+    }
+
+    #chat-message-submit {
+        padding: 0 20px;
+        border-radius: 50%;
+        border: none;
+        background-color: #075e54;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 1.2rem;
+        transition: transform 0.2s ease;
+    }
+
+    #chat-message-submit:hover {
+        transform: scale(1.1);
+    }
+
+    /* Scrollbar style */
+    #chat-log::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    #chat-log::-webkit-scrollbar-thumb {
+        background-color: #555;
+        border-radius: 3px;
+    }
+
+    #chat-log::-webkit-scrollbar-track {
+        background-color: #121212;
+    }
+
+    /* Users button */
+    .users-btn {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.9rem;
+    }
+
+    @media (max-width: 576px) {
+        .chat-container {
+            height: 95vh;
+        }
+        #chat-message-submit {
+            padding: 0 15px;
+        }
+    }
+</style>
+</head>
+<body>
+
+<div class="chat-container">
+    <!-- Header -->
+    <div class="chat-header">
+        <div>
+            <i class="bi bi-chat-dots-fill"></i>
+            Room: {{ room_name }}
+        </div>
+        <div>
+            <a href="{% url 'chat:users_list' %}" class="btn btn-sm btn-primary users-btn">
+                <i class="bi bi-people-fill"></i> Users
+            </a>
+        </div>
+    </div>
+
+    <!-- Chat Messages -->
+    <div id="chat-log">
+        {% for msg in messages %}
+            <div class="message {% if msg.user == request.user %}self{% else %}other{% endif %}">
+                <strong>{{ msg.user.username }}:</strong> {{ msg.message }}
+                <div class="timestamp">{{ msg.timestamp|date:"H:i" }}</div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Input -->
+    <div class="chat-input-container">
+        <input id="chat-message-input" type="text" placeholder="Type a message...">
+        <button id="chat-message-submit"><i class="bi bi-send-fill"></i></button>
+    </div>
+</div>
+
+<script>
+const roomName = "{{ room_name }}";
+const chatSocket = new WebSocket(
+    'ws://' + window.location.host + '/ws/chat/' + roomName + '/'
+);
+
+chatSocket.onmessage = function(e) {
+    const data = JSON.parse(e.data);
+    const chatLog = document.getElementById('chat-log');
+    const messageDiv = document.createElement('div');
+    messageDiv.classList.add('message');
+    messageDiv.classList.add(data.username === "{{ request.user.username }}" ? 'self' : 'other');
+
+    const timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    messageDiv.innerHTML = `<strong>${data.username}:</strong> ${data.message} 
+                            <div class="timestamp">${timestamp}</div>`;
+    chatLog.appendChild(messageDiv);
+    chatLog.scrollTop = chatLog.scrollHeight;
+};
+
+document.getElementById('chat-message-submit').onclick = function() {
+    const input = document.getElementById('chat-message-input');
+    const message = input.value.trim();
+    if(message === '') return;
+    chatSocket.send(JSON.stringify({ 'message': message }));
+    input.value = '';
+};
+</script>
+
+</body>
+</html>
